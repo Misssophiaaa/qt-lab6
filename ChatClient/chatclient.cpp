@@ -64,7 +64,7 @@ void chatClient::onReadyRead()
     }
 }
 
-//暂时删除
+//删除
 //void chatClient::sendMessage(const QString &text, const QString &type)
 //{
 //    if(m_clientSocket->state() != QAbstractSocket::ConnectedState)
