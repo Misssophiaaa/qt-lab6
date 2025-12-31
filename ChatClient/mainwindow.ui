@@ -55,7 +55,11 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QTextEdit" name="roomtextEdit"/>
+           <widget class="QTextEdit" name="roomtextEdit">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QListWidget" name="userlistWidget">
@@ -78,6 +82,16 @@
            <widget class="QPushButton" name="sayButton">
             <property name="text">
              <string>发送</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="exitPrivateButton">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>退出私聊</string>
             </property>
            </widget>
           </item>

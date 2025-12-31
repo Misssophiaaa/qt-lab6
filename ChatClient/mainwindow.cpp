@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_chatclient, &chatClient::connected, this, &MainWindow::connectedToServer);
     // connect(m_chatclient,&chatClient::messageReceived,this,&MainWindow::messageReceived);
     connect(m_chatclient, &chatClient::jsonReceived, this, &MainWindow::jsonReceived);
+//新增
+    ui->exitPrivateButton->setEnabled(false);
 }
 
 MainWindow::~MainWindow()
@@ -162,8 +164,8 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
     else if (typeVal.toString().compare("private", Qt::CaseInsensitive) == 0) {
         const QJsonValue senderVal = docObj.value("sender");
         const QJsonValue textVal = docObj.value("text");
-         if(   senderVal.isNull() || !senderVal.isString() ||
-                textVal.isNull() || !textVal.isString()) {
+         if(      senderVal.isNull() || !senderVal.isString() ||
+                 textVal.isNull() || !textVal.isString()) {
             return;
         }
         QString sender = senderVal.toString().trimmed();
@@ -246,5 +248,21 @@ void MainWindow::on_userlistWidget_itemDoubleClicked(QListWidgetItem *item)
 
     m_privateTarget = username;
     ui->saylineEdit->setPlaceholderText(QString("私聊 → %1").arg(m_privateTarget));
+//    ui->sayButton->setText("发送私聊");
+    // 进入私聊时
+    m_privateTarget = username;
     ui->sayButton->setText("发送私聊");
+    ui->saylineEdit->setPlaceholderText(QString("私聊 → %1").arg(m_privateTarget));
+    ui->exitPrivateButton->setEnabled(true); // 👈 显示退出按钮
 }
+//新增
+void MainWindow::on_exitPrivateButton_clicked()
+{
+    m_privateTarget.clear();
+    ui->sayButton->setText("发送");
+    ui->saylineEdit->setPlaceholderText("");
+    ui->roomtextEdit->append("[已退出私聊，返回群聊]");
+    ui->exitPrivateButton->setEnabled(false);
+}
+
+

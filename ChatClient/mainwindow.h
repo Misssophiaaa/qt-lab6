@@ -36,11 +36,14 @@ private slots:
     //新增
     void on_userlistWidget_itemDoubleClicked(QListWidgetItem *item);
 
+    void on_exitPrivateButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     chatClient *m_chatclient;
     //新增
     QString m_myUsername;
     QString m_privateTarget;
+    void exitPrivateMode();
 };
 #endif // MAINWINDOW_H
