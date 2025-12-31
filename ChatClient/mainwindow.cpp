@@ -176,7 +176,7 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
         qDebug() << userlistVal.toVariant().toStringList();
         userListReceived(userlistVal.toVariant().toStringList());
     }
-    //新增
+    //新增一段
     else if (typeVal.toString().compare("userlist", Qt::CaseInsensitive) == 0) {
         ui->stackedWidget->setCurrentWidget(ui->chatPage);
         m_myUsername = ui->usernameEdit->text().trimmed(); // ✅ 保存
