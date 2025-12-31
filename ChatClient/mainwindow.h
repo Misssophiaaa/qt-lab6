@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "chatclient.h"
 #include <QString>
+#include <QListWidget>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,6 +33,8 @@ private slots:
     void userJoined(const QString &user);
     void userLeft(const QString &user);
     void userListReceived(const QStringList &list);
+    //新增
+    void on_userlistWidget_itemDoubleClicked(QListWidgetItem *item);
 
 private:
     Ui::MainWindow *ui;

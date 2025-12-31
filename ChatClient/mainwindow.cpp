@@ -83,8 +83,13 @@ void MainWindow::on_sayButton_clicked()
 void MainWindow::on_layoutButton_clicked()
 
 {
+    m_privateTarget.clear();//新增
     m_chatclient->disconnectFromHost();
     ui->stackedWidget->setCurrentWidget(ui->loginPage);
+    //新增
+    ui->sayButton->setText("发送"); // 👈 恢复按钮文本
+    ui ->saylineEdit->setPlaceholderText("");
+    //结束
     for (auto aItem : ui->userlistWidget ->findItems(ui->usernameEdit->text(), Qt::MatchExactly)) {
         qDebug("remove");
         ui->userlistWidget->removeItemWidget(aItem);
@@ -153,7 +158,21 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
 
         messageReceived(sender, text);
 
-    } else if (typeVal.toString().compare("newuser", Qt::CaseInsensitive) == 0) {
+    }     //新增
+    else if (typeVal.toString().compare("private", Qt::CaseInsensitive) == 0) {
+        const QJsonValue senderVal = docObj.value("sender");
+        const QJsonValue textVal = docObj.value("text");
+         if(   senderVal.isNull() || !senderVal.isString() ||
+                textVal.isNull() || !textVal.isString()) {
+            return;
+        }
+        QString sender = senderVal.toString().trimmed();
+        QString text = textVal.toString().trimmed();
+        // 显示私聊消息（带标识）
+        ui->roomtextEdit->append(QString("[私聊 ← %1] %2").arg(sender, text));
+    }
+    //结束
+    else if (typeVal.toString().compare("newuser", Qt::CaseInsensitive) == 0) {
         const QJsonValue usernameVal = docObj.value("username");
         if (usernameVal.isNull() || !usernameVal.isString())
             return;
@@ -210,4 +229,22 @@ void MainWindow::userListReceived(const QStringList &list)
 {
     ui->userlistWidget->clear();
     ui->userlistWidget->addItems(list);
+}
+//新增
+void MainWindow::on_userlistWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+    QString username = item->text();
+    // 去掉可能的“*”标记（自己）
+    if (username.endsWith('*')) {
+        username = username.left(username.length() - 1);
+    }
+
+    if (username == m_myUsername) {
+        QMessageBox::information(this, "提示", "不能和自己私聊");
+        return;
+    }
+
+    m_privateTarget = username;
+    ui->saylineEdit->setPlaceholderText(QString("私聊 → %1").arg(m_privateTarget));
+    ui->sayButton->setText("发送私聊");
 }

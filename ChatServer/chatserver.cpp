@@ -128,6 +128,54 @@ void ChatServer::jsonReceived(ServerWorker *sender, const QJsonObject &docObj)
         qDebug() << "用户" << username << "登录成功";
         emit logMessage(QString("用户%1登录成功").arg(username));
     }
+
+    //新增
+    // 在 chatserver.cpp 的 jsonReceived 函数中，else if (login) 之后添加：
+    else if (typeVal.toString().compare("private", Qt::CaseInsensitive) == 0) {
+        const QJsonValue targetVal = docObj.value("target");
+        const QJsonValue textVal = docObj.value("text");
+
+        if (targetVal.isNull() || !targetVal.isString() ||
+                textVal.isNull() || !textVal.isString()) {
+            return;
+        }
+
+        QString target = targetVal.toString().trimmed();
+        QString text = textVal.toString().trimmed();
+
+        if (target.isEmpty() || text.isEmpty()) {
+            return;
+        }
+
+        // 查找目标用户
+        ServerWorker *targetWorker = nullptr;
+        for (ServerWorker *worker : m_clients) {
+            if (worker->userName() == target) {
+                targetWorker = worker;
+                break;
+            }
+        }
+
+        if (targetWorker) {
+            // 构造私聊消息
+            QJsonObject privateMsg;
+            privateMsg["type"] = "private";
+            privateMsg["sender"] = sender->userName();
+            privateMsg["text"] = text;
+
+            // 只发给目标用户
+            targetWorker->sendJson(privateMsg);
+
+            // 可选：也回显给发送者（已在客户端做了，可省略）
+            // sender->sendJson(privateMsg);
+        } else {
+            // 目标用户不存在，可选：通知发送者
+            QJsonObject error;
+            error["type"] = "privateError";
+            error["text"] = QString("用户 %1 不在线").arg(target);
+            sender->sendJson(error);
+        }
+    }
 }
 
 void ChatServer::userDisconnected(ServerWorker *sender)
