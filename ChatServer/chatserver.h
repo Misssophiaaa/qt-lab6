@@ -3,8 +3,8 @@
 
 #include <QObject>
 #include <QTcpServer>
-#include <QVector>      // ✅ 显式包含
-#include <QMutex>       // ✅ 用于线程安全
+#include <QVector>
+#include <QMutex>
 #include "serverworker.h"
 
 class ChatServer : public QTcpServer
