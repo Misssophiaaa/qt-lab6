@@ -6,6 +6,11 @@
 #include <QString>
 #include <QListWidget>
 
+//新增
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QDir>
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -45,5 +50,11 @@ private:
     QString m_myUsername;
     QString m_privateTarget;
     void exitPrivateMode();
+    //数据库新增
+    QSqlDatabase m_db;
+    void initDatabase();
+    void saveMessage(const QString &type, const QString &sender,
+                     const QString &target, const QString &content);
+    void loadHistory();
 };
 #endif // MAINWINDOW_H
