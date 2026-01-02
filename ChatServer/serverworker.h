@@ -29,4 +29,4 @@ public slots:
     void sendJson(const QJsonObject &json);
 };
 
-#endif // SERVERWORKER_H
+#endif
