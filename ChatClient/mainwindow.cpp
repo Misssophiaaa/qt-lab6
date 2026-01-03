@@ -22,6 +22,11 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    //新增
+    if (!m_myUsername.isEmpty()) {
+        saveUserLogout(m_myUsername); // 👈 记录登出
+    }
+    //结束
     delete ui;
 }
 
@@ -53,7 +58,31 @@ void MainWindow::on_loginButton_clicked()
 void MainWindow::on_sayButton_clicked()
 {
     QString message = ui->saylineEdit->text().trimmed();
-    if (message.isEmpty()) return;
+     //数据库新增
+    QString serverAddr = ui->serverEdit->text().trimmed();
+     String username = ui->usernameEdit->text().trimmed();
+      f (serverAddr.isEmpty()) {
+         MessageBox::warning(this, "输入错误", "请输入服务器地址");
+         eturn;
+
+    if (username.isEmpty()) {
+         MessageBox::warning(this, "输入错误", "请输入昵称");
+         eturn;
+
+      / ✅ 👇 关键：提前保存自己的用户名！
+      myUsername = username;
+  /        // 连接服务器（假设你有 connectToServer 方法）
+//        if (!m_chatclient->connectToHost(serverAddr, 8888)) {
+//            QMessageBox::critical(this, "连接失败", "无法连接到服务器");
+//            return;
+//        }
+     // 发送登录请求
+      sonObject loginObj;
+    loginObj["type"] = "login";
+      ginObj["username"] = username;
+    m_chatclient->sendJson(loginObj);
+      新增结束
+     if (message.isEmpty()) return;
 
     if (!m_privateTarget.isEmpty()) {
         // 发送私聊
@@ -77,6 +106,11 @@ void MainWindow::on_sayButton_clicked()
         // 可选：本地回显（公共）
         // QString selfName = /* 你的用户名 */;
         // ui->roomtextEdit->append(QString("[%1] %2").arg(selfName, message));
+         //数据库新增
+        // 本地回显（群聊）
+          ->roomtextEdit->append(QString("[%1] %2").arg(m_myUsername, message));
+            ✅ 保存自己发出的群聊消息
+        saveMessage("group", m_myUsername, "", message);
     }
 
     ui->saylineEdit->clear();
@@ -141,7 +175,7 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
         ui->stackedWidget->setCurrentWidget(ui->loginPage);
         return;
     }
-
+//群聊信息
     if (typeVal.toString().compare("message", Qt::CaseInsensitive) == 0) {
         const QJsonValue textVal = docObj.value("text");
         const QJsonValue senderVal = docObj.value("sender");
@@ -159,50 +193,62 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
             return;
 
         messageReceived(sender, text);
+         //数据库新增
+        saveMessage("group", sender, "", text);
 
     }     //新增
     else if (typeVal.toString().compare("private", Qt::CaseInsensitive) == 0) {
         const QJsonValue senderVal = docObj.value("sender");
         const QJsonValue textVal = docObj.value("text");
-         if(      senderVal.isNull() || !senderVal.isString() ||
-                 textVal.isNull() || !textVal.isString()) {
+         if       senderVal.isNull() || !senderVal.isString() ||
+                  textVal.isNull() || !textVal.isString()) {
             return;
         }
         QString sender = senderVal.toString().trimmed();
         QString text = textVal.toString().trimmed();
         // 显示私聊消息（带标识）
         ui->roomtextEdit->append(QString("[私聊 ← %1] %2").arg(sender, text));
+         //数据库新增
+        saveMessage("private", sender, m_myUsername, text);
     }
-    //结束
+     //结束
+     //新用户加入
     else if (typeVal.toString().compare("newuser", Qt::CaseInsensitive) == 0) {
         const QJsonValue usernameVal = docObj.value("username");
         if (usernameVal.isNull() || !usernameVal.isString())
             return;
         userJoined(usernameVal.toString());
-    } else if (typeVal.toString().compare("userdisconnected", Qt::CaseInsensitive) == 0) {
+    }
+   //用户离开
+    else if (typeVal.toString().compare("userdisconnected", Qt::CaseInsensitive) == 0) {
         const QJsonValue usernameVal = docObj.value("username");
         if (usernameVal.isNull() || !usernameVal.isString())
             return;
         userLeft(usernameVal.toString());
-    } else if (typeVal.toString().compare("userlist", Qt::CaseInsensitive) == 0) {
-        // 收到用户列表，表示登录成功，切换页面
-        if (ui->stackedWidget->currentWidget() != ui->chatPage) {
-            ui->stackedWidget->setCurrentWidget(ui->chatPage);
-        }
-
-        const QJsonValue userlistVal = docObj.value("userlist");
-        if (userlistVal.isNull() || !userlistVal.isArray())
-            return;
-
-        qDebug() << userlistVal.toVariant().toStringList();
-        userListReceived(userlistVal.toVariant().toStringList());
     }
+   //用户列表，下面先注释
+//    else if (typeVal.toString().compare("userlist", Qt::CaseInsensitive) == 0) {
+//        // 收到用户列表，表示登录成功，切换页面
+//        if (ui->stackedWidget->currentWidget() != ui->chatPage) {
+//            ui->stackedWidget->setCurrentWidget(ui->chatPage);
+//        }
+
+//        const QJsonValue userlistVal = docObj.value("userlist");
+//        if (userlistVal.isNull() || !userlistVal.isArray())
+//            return;
+
+//        qDebug() << userlistVal.toVariant().toStringList();
+//        userListReceived(userlistVal.toVariant().toStringList());
+//    }
     //新增一段
     else if (typeVal.toString().compare("userlist", Qt::CaseInsensitive) == 0) {
         ui->stackedWidget->setCurrentWidget(ui->chatPage);
         m_myUsername = ui->usernameEdit->text().trimmed(); // ✅ 保存
 
-        const QJsonValue userlistVal = docObj.value("userlist");
+        //数据库新增：
+        saveUserLogin(m_myUsername);// ✅ 记录用户登录到数据库
+        loadHistory();// ✅ 加载历史聊天记录
+         const QJsonValue userlistVal = docObj.value("userlist");
         if (userlistVal.isArray()) {
             QStringList list;
             for (const QJsonValue &v : userlistVal.toArray()) {
@@ -265,4 +311,82 @@ void MainWindow::on_exitPrivateButton_clicked()
     ui->exitPrivateButton->setEnabled(false);
 }
 
+void MainWindow::initDatabase()
+{
+    // 使用本地路径（避免依赖特定目录）
+        ing dbPath = QCoreApplication::applicationDirPath() + "/Lab5.db";
+      m_d = QSqlDatabase::addDatabase("QSQLITE");
+      m_.setDatabaseName(dbPath);
+       if!m_db.open()) {
+        qWarning() << "无法打开数据库：" << m_db.lastError().text();
+            rn;
+       }   qDebug() << "✅ 数据库连接成功：Lab5.db";
+}
 
+void MainWindow::saveMessage(const QString &type, const QString &sender, const QString &receiver, const QString &content)
+{
+    if (!m_db.isOpen()) return;
+      QSqQuery query(m_db);
+     quey.prepare("INSERT INTO messages (type, sender, receiver, content, timestamp) "
+                    "VUES (?, ?, ?, ?, datetime('now'))");
+      quy.addBindValue(type);
+       qy.addBindValue(sender);
+    query.addBindValue(receiver.isEmpty() ? QVariant() : receiver); // NULL for group
+        y.addBindValue(content);
+     quey.exec();
+       ifquery.lastError().isValid()) {
+          qWning() << "保存消息失败：" << query.lastError().text();
+     }
+}
+
+void MainWindow::saveUserLogin(const QString &nickname)
+{
+    if (!m_db.isOpen()) return;
+
+    QSqlQuery query(m_db);
+    query.prepare("INSERT OR REPLACE INTO users (nick_name, login_time, logout_time, status) "
+                  "VALUES (?, datetime('now'), '', 'online')");
+    query.addBindValue(nickname);
+    query.exec();
+}
+
+void MainWindow::saveUserLogout(const QString &nickname)
+{
+    if (!m_db.isOpen()) return;
+
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET logout_time = datetime('now'), status = 'offline' "
+                  "WHERE nick_name = ?");
+    query.addBindValue(nickname);
+    query.exec();
+}
+
+
+void MainWindow::loadHistory()
+{
+    if (!m_db.isOpen()) return;
+
+    QSqlQuery query(m_db);
+    query.exec("SELECT type, sender, receiver, content, timestamp FROM messages "
+               "ORDER BY timestamp DESC LIMIT 100");
+
+    QStringList history;
+    while (query.next()) {
+        QString type = query.value("type").toString();
+        QString sender = query.value("sender").toString();
+        QString receiver = query.value("receiver").toString();
+        QString content = query.value("content").toString();
+        QString ts = query.value("timestamp").toDateTime().toString("MM-dd hh:mm");
+
+        if (type == "group") {
+            history.prepend(QString("[%1 %2] %3").arg(ts, sender, content));
+        } else {
+            QString direction = (sender == m_myUsername) ? "→" : "←";
+            QString peer = (sender == m_myUsername) ? receiver : sender;
+            history.prepend(QString("[%1][私聊 %2 %3] %4")
+                            .arg(ts, direction, peer, content));
+        }
+    }
+
+    ui->roomtextEdit->setPlainText(history.join("\n"));
+}
