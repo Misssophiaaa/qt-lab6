@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_chatclient, &chatClient::jsonReceived, this, &MainWindow::jsonReceived);
 //新增
     ui->exitPrivateButton->setEnabled(false);
-    initDatabase();
+//initDatabase();
 }
 
 MainWindow::~MainWindow()
@@ -65,10 +65,8 @@ void MainWindow::on_sayButton_clicked()
      //数据库新增
      QString username = ui->usernameEdit->text().trimmed();
 
+       m_myUsername = username;
 
-
-     m_myUsername
-= username;
 
 
     QJsonObject loginObj;
@@ -97,7 +95,7 @@ void MainWindow::on_sayButton_clicked()
 
         m_chatclient->sendJson(msg); // 统一使用 sendJson
 
-         //数据库新增
+
          //保存自己发出的群聊消息
          saveMessage("group", m_myUsername, "", message);
     }
@@ -196,8 +194,9 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
         QString text = textVal.toString().trimmed();
         // 显示私聊消息（带标识）
         ui->roomtextEdit->append(QString("[私聊 ← %1] %2").arg(sender, text));
-        //数据库新增
-        saveMessage("private", sender, m_myUsername, text);
+
+         //数据库新增
+         saveMessage("private", sender, m_myUsername, text);
     }
     //结束
     //新用户加入
@@ -231,11 +230,11 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
     //新增一段
     else if (typeVal.toString().compare("userlist", Qt::CaseInsensitive) == 0) {
         ui->stackedWidget->setCurrentWidget(ui->chatPage);
-        m_myUsername = ui->usernameEdit->text().trimmed(); // ✅ 保存
+        m_myUsername = ui->usernameEdit->text().trimmed(); //  保存
 
         //数据库新增：
-        saveUserLogin(m_myUsername);// ✅ 记录用户登录到数据库
-        loadHistory();// ✅ 加载历史聊天记录
+        saveUserLogin(m_myUsername);//  记录用户登录到数据库
+        loadHistory();//  加载历史聊天记录
         const QJsonValue userlistVal = docObj.value("userlist");
         if (userlistVal.isArray()) {
             QStringList list;
@@ -312,7 +311,7 @@ void MainWindow::initDatabase()
         return;
     }
 
-    qDebug() << "✅ 数据库连接成功：Lab5.db";
+    else qDebug() << " 数据库连接成功：Lab5a.db";
 }
 void MainWindow::saveMessage(const QString &type, const QString &sender,
                              const QString &receiver, const QString &content)
@@ -325,13 +324,12 @@ void MainWindow::saveMessage(const QString &type, const QString &sender,
 
     query.bindValue(":type", type);
     query.bindValue(":sender", sender);
-    query.bindValue(":receiver", receiver.isEmpty() ? QVariant() : receiver);
-    query.bindValue(":content", content);
+    query.bindValue(":receiver", receiver.isEmpty() ? QVariant() : receiver);      query.bindValue(":content", content);
 
     if (!query.exec()) {
-        qWarning() << "❌ 保存消息失败：" << query.lastError().text();
+        qWarning() << "保存消息失败：" << query.lastError().text();
     } else {
-        qDebug() << "✅ 消息保存成功";
+        qDebug() << "消息保存成功";
     }
 }
 void MainWindow::saveUserLogin(const QString &nickname)
