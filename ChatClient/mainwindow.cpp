@@ -5,6 +5,9 @@
 #include <QJsonObject>
 #include <QMessageBox>  // 添加这个头文件
 #include <QJsonArray>
+#include <QSqlError>
+#include <QDateTime>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -18,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_chatclient, &chatClient::jsonReceived, this, &MainWindow::jsonReceived);
 //新增
     ui->exitPrivateButton->setEnabled(false);
+    initDatabase();
 }
 
 MainWindow::~MainWindow()
@@ -59,30 +63,20 @@ void MainWindow::on_sayButton_clicked()
 {
     QString message = ui->saylineEdit->text().trimmed();
      //数据库新增
-    QString serverAddr = ui->serverEdit->text().trimmed();
-     String username = ui->usernameEdit->text().trimmed();
-      f (serverAddr.isEmpty()) {
-         MessageBox::warning(this, "输入错误", "请输入服务器地址");
-         eturn;
+     QString username = ui->usernameEdit->text().trimmed();
 
-    if (username.isEmpty()) {
-         MessageBox::warning(this, "输入错误", "请输入昵称");
-         eturn;
 
-      / ✅ 👇 关键：提前保存自己的用户名！
-      myUsername = username;
-  /        // 连接服务器（假设你有 connectToServer 方法）
-//        if (!m_chatclient->connectToHost(serverAddr, 8888)) {
-//            QMessageBox::critical(this, "连接失败", "无法连接到服务器");
-//            return;
-//        }
-     // 发送登录请求
-      sonObject loginObj;
+
+     m_myUsername
+= username;
+
+
+    QJsonObject loginObj;
     loginObj["type"] = "login";
-      ginObj["username"] = username;
+     loginObj["username"] = username;
     m_chatclient->sendJson(loginObj);
-      新增结束
-     if (message.isEmpty()) return;
+     // 新增结束
+    if (message.isEmpty()) return;
 
     if (!m_privateTarget.isEmpty()) {
         // 发送私聊
@@ -91,26 +85,21 @@ void MainWindow::on_sayButton_clicked()
         msg["target"] = m_privateTarget;
         msg["text"] = message;
 
-        m_chatclient->sendJson(msg); // ✅ 使用新方法
+        m_chatclient->sendJson(msg); //  使用新方法
 
         // 本地回显（私聊）
-        ui->roomtextEdit->append(QString("[私聊 → %1] %2").arg(m_privateTarget, message));
+         ui->roomtextEdit->append(QString("[私聊 → %1] %2").arg(m_privateTarget, message));
     } else {
         // 公共聊天
         QJsonObject msg;
         msg["type"] = "message";
         msg["text"] = message;
 
-        m_chatclient->sendJson(msg); // ✅ 统一使用 sendJson
+        m_chatclient->sendJson(msg); // 统一使用 sendJson
 
-        // 可选：本地回显（公共）
-        // QString selfName = /* 你的用户名 */;
-        // ui->roomtextEdit->append(QString("[%1] %2").arg(selfName, message));
          //数据库新增
-        // 本地回显（群聊）
-          ->roomtextEdit->append(QString("[%1] %2").arg(m_myUsername, message));
-            ✅ 保存自己发出的群聊消息
-        saveMessage("group", m_myUsername, "", message);
+         //保存自己发出的群聊消息
+         saveMessage("group", m_myUsername, "", message);
     }
 
     ui->saylineEdit->clear();
@@ -186,47 +175,46 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
             return;
 
         const QString text = textVal.toString().trimmed();
-        if (text.isEmpty())
+         if (text.isEmpty())
             return;
         const QString sender = senderVal.toString().trimmed();
         if (text.isEmpty())
             return;
 
         messageReceived(sender, text);
-         //数据库新增
-        saveMessage("group", sender, "", text);
+         saveMessage("group", sender, "", text);
 
     }     //新增
     else if (typeVal.toString().compare("private", Qt::CaseInsensitive) == 0) {
         const QJsonValue senderVal = docObj.value("sender");
         const QJsonValue textVal = docObj.value("text");
-         if       senderVal.isNull() || !senderVal.isString() ||
-                  textVal.isNull() || !textVal.isString()) {
+         if  (senderVal.isNull() || !senderVal.isString() ||
+                textVal.isNull() || !textVal.isString()) {
             return;
         }
         QString sender = senderVal.toString().trimmed();
         QString text = textVal.toString().trimmed();
         // 显示私聊消息（带标识）
         ui->roomtextEdit->append(QString("[私聊 ← %1] %2").arg(sender, text));
-         //数据库新增
+        //数据库新增
         saveMessage("private", sender, m_myUsername, text);
     }
-     //结束
-     //新用户加入
+    //结束
+    //新用户加入
     else if (typeVal.toString().compare("newuser", Qt::CaseInsensitive) == 0) {
         const QJsonValue usernameVal = docObj.value("username");
         if (usernameVal.isNull() || !usernameVal.isString())
             return;
         userJoined(usernameVal.toString());
     }
-   //用户离开
+    //   用户离开
     else if (typeVal.toString().compare("userdisconnected", Qt::CaseInsensitive) == 0) {
         const QJsonValue usernameVal = docObj.value("username");
         if (usernameVal.isNull() || !usernameVal.isString())
             return;
         userLeft(usernameVal.toString());
     }
-   //用户列表，下面先注释
+    //  用户列表，下面先注释
 //    else if (typeVal.toString().compare("userlist", Qt::CaseInsensitive) == 0) {
 //        // 收到用户列表，表示登录成功，切换页面
 //        if (ui->stackedWidget->currentWidget() != ui->chatPage) {
@@ -248,7 +236,7 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
         //数据库新增：
         saveUserLogin(m_myUsername);// ✅ 记录用户登录到数据库
         loadHistory();// ✅ 加载历史聊天记录
-         const QJsonValue userlistVal = docObj.value("userlist");
+        const QJsonValue userlistVal = docObj.value("userlist");
         if (userlistVal.isArray()) {
             QStringList list;
             for (const QJsonValue &v : userlistVal.toArray()) {
@@ -314,31 +302,38 @@ void MainWindow::on_exitPrivateButton_clicked()
 void MainWindow::initDatabase()
 {
     // 使用本地路径（避免依赖特定目录）
-        ing dbPath = QCoreApplication::applicationDirPath() + "/Lab5.db";
-      m_d = QSqlDatabase::addDatabase("QSQLITE");
-      m_.setDatabaseName(dbPath);
-       if!m_db.open()) {
-        qWarning() << "无法打开数据库：" << m_db.lastError().text();
-            rn;
-       }   qDebug() << "✅ 数据库连接成功：Lab5.db";
-}
+    QString dbPath = QCoreApplication::applicationDirPath() + "/Lab5a.db";
 
-void MainWindow::saveMessage(const QString &type, const QString &sender, const QString &receiver, const QString &content)
+    m_db = QSqlDatabase::addDatabase("QSQLITE");
+    m_db.setDatabaseName(dbPath);
+
+    if (!m_db.open()) {
+        qWarning() << "无法打开数据库：" << m_db.lastError().text();
+        return;
+    }
+
+    qDebug() << "✅ 数据库连接成功：Lab5.db";
+}
+void MainWindow::saveMessage(const QString &type, const QString &sender,
+                             const QString &receiver, const QString &content)
 {
     if (!m_db.isOpen()) return;
-      QSqQuery query(m_db);
-     quey.prepare("INSERT INTO messages (type, sender, receiver, content, timestamp) "
-                    "VUES (?, ?, ?, ?, datetime('now'))");
-      quy.addBindValue(type);
-       qy.addBindValue(sender);
-    query.addBindValue(receiver.isEmpty() ? QVariant() : receiver); // NULL for group
-        y.addBindValue(content);
-     quey.exec();
-       ifquery.lastError().isValid()) {
-          qWning() << "保存消息失败：" << query.lastError().text();
-     }
-}
 
+    QSqlQuery query(m_db);
+    query.prepare("INSERT INTO messages (type, sender, receiver, content, timestamp) "
+                  "VALUES (:type, :sender, :receiver, :content, datetime('now'))");
+
+    query.bindValue(":type", type);
+    query.bindValue(":sender", sender);
+    query.bindValue(":receiver", receiver.isEmpty() ? QVariant() : receiver);
+    query.bindValue(":content", content);
+
+    if (!query.exec()) {
+        qWarning() << "❌ 保存消息失败：" << query.lastError().text();
+    } else {
+        qDebug() << "✅ 消息保存成功";
+    }
+}
 void MainWindow::saveUserLogin(const QString &nickname)
 {
     if (!m_db.isOpen()) return;

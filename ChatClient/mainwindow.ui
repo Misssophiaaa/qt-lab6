@@ -41,7 +41,7 @@
     <item>
      <widget class="QLabel" name="titleLabel">
       <property name="text">
-       <string>区淑惠的聊天室</string>
+       <string>多人聊天室</string>
       </property>
      </widget>
     </item>

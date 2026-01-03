@@ -54,7 +54,10 @@ private:
     QSqlDatabase m_db;
     void initDatabase();
     void saveMessage(const QString &type, const QString &sender,
-                     const QString &target, const QString &content);
+                     const QString &receiver, const QString &content);
+    void saveUserLogin(const QString &nickname);
+    void saveUserLogout(const QString &nickname);
     void loadHistory();
+    void loadUserInfo();
 };
 #endif // MAINWINDOW_H
