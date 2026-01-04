@@ -6,7 +6,7 @@
 #include <QString>
 #include <QListWidget>
 
-//
+
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QDir>
