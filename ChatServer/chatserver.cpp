@@ -166,8 +166,7 @@ void ChatServer::jsonReceived(ServerWorker *sender, const QJsonObject &docObj)
             // 只发给目标用户
             targetWorker->sendJson(privateMsg);
 
-            // 可选：也回显给发送者（已在客户端做了，可省略）
-            // sender->sendJson(privateMsg);
+
         } else {
             // 目标用户不存在，可选：通知发送者
             QJsonObject error;
