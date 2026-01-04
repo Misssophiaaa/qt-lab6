@@ -13,29 +13,6 @@ chatClient::chatClient(QObject *parent)
 
 }
 
-//void chatClient::onReadyRead()
-//{
-//    QByteArray jsonData;
-//    QDataStream socketStream(m_clientSocket);
-//    socketStream.setVersion(QDataStream::Qt_5_12);
-//    for(;;){
-//        socketStream.startTransaction();
-//        socketStream >> jsonData;
-//        if(socketStream.commitTransaction()){
-//            // emit messageReceived(QString::fromUtf8(jsonData));
-//            QJsonParseError parseError;
-//            const QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData,&parseError);
-//            if(parseError.error == QJsonParseError::NoError){
-//                if(jsonDoc.isObject()){
-//                    // emit logMessage(QJsonDocument(jsonDoc).toJson(QJsonDocument::Compact));
-//                    emit jsonReceived(jsonDoc.object());
-//                }
-//            }
-//        }else{
-//            break;
-//        }
-//    }
-//}
 
 //修改
 void chatClient::onReadyRead()
