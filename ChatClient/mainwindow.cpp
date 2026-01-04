@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_chatclient, &chatClient::jsonReceived, this, &MainWindow::jsonReceived);
 //新增
     ui->exitPrivateButton->setEnabled(false);
-//initDatabase();
+    initDatabase();
 }
 
 MainWindow::~MainWindow()
@@ -62,18 +62,21 @@ void MainWindow::on_loginButton_clicked()
 void MainWindow::on_sayButton_clicked()
 {
     QString message = ui->saylineEdit->text().trimmed();
-     /数据库新增
-    QString username = ui->usernameEdit->text().trimmed();
+     //数据库新增
+     QString username = ui->usernameEdit->text().trimmed();
 
-     _myUsername = username;
+
+
+    m_myUsername =
+username;
 
 
 
     QJsonObject loginObj;
     loginObj["type"] = "login";
-     oginObj["username"] = username;
+     loginObj["username"] = username;
     m_chatclient->sendJson(loginObj);
-     / 新增结束
+     // 新增结束
     if (message.isEmpty()) return;
 
     if (!m_privateTarget.isEmpty()) {
@@ -86,7 +89,7 @@ void MainWindow::on_sayButton_clicked()
         m_chatclient->sendJson(msg); //  使用新方法
 
         // 本地回显（私聊）
-         i->roomtextEdit->append(QString("[私聊 → %1] %2").arg(m_privateTarget, message));
+         ui->roomtextEdit->append(QString("[私聊 → %1] %2").arg(m_privateTarget, message));
     } else {
         // 公共聊天
         QJsonObject msg;
@@ -95,9 +98,9 @@ void MainWindow::on_sayButton_clicked()
 
         m_chatclient->sendJson(msg); // 统一使用 sendJson
 
-
-         /保存自己发出的群聊消息
-        saveMessage("group", m_myUsername, "", message);
+         //数据库新增
+         //保存自己发出的群聊消息
+         saveMessage("group", m_myUsername, "", message);
     }
 
     ui->saylineEdit->clear();
@@ -122,7 +125,7 @@ void MainWindow::on_layoutButton_clicked()
 
 void MainWindow::connectedToServer()
 {
-
+    // 注意：这里只发送登录信息，不立即切换页面
     // 等待服务器返回成功后再切换
 //    m_chatclient->sendMessage(ui->usernameEdit->text(), "login");
     //修改
@@ -173,20 +176,20 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
             return;
 
         const QString text = textVal.toString().trimmed();
-         i (text.isEmpty())
+         if (text.isEmpty())
             return;
         const QString sender = senderVal.toString().trimmed();
         if (text.isEmpty())
             return;
 
         messageReceived(sender, text);
-         sveMessage("group", sender, "", text);
+         saveMessage("group", sender, "", text);
 
     }     //新增
     else if (typeVal.toString().compare("private", Qt::CaseInsensitive) == 0) {
         const QJsonValue senderVal = docObj.value("sender");
         const QJsonValue textVal = docObj.value("text");
-         i  (senderVal.isNull() || !senderVal.isString() ||
+         if  (senderVal.isNull() || !senderVal.isString() ||
                 textVal.isNull() || !textVal.isString()) {
             return;
         }
@@ -195,8 +198,8 @@ void MainWindow::jsonReceived(const QJsonObject &docObj)
         // 显示私聊消息（带标识）
         ui->roomtextEdit->append(QString("[私聊 ← %1] %2").arg(sender, text));
 
-         /数据库新增
-        saveMessage("private", sender, m_myUsername, text);
+
+       saveMessage("private", sender, m_myUsername, text);
     }
     //结束
     //新用户加入
@@ -324,8 +327,7 @@ void MainWindow::saveMessage(const QString &type, const QString &sender,
 
     query.bindValue(":type", type);
     query.bindValue(":sender", sender);
-    query.bindValue(":receiver", receiver.isEmpty() ? QVariant() : receiver);
- query.bindValue(":content", content);
+    query.bindValue(":receiver", receiver.isEmpty() ? QVariant() : receiver);      query.bindValue(":content", content);
 
     if (!query.exec()) {
         qWarning() << "保存消息失败：" << query.lastError().text();
